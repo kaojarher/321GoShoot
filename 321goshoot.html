@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>馬尾少女戰鬥陀螺錦標賽 (1vs1 正式對決版)</title>
+    <style>
+        :root {
+            --primary: #2196F3;
+            --dark: #0D47A1;
+            --accent: #FF5722;
+            --bg-grid-0: url('sport0.png'); 
+            --bg-grid-1: url('sport1.png'); 
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #121214; margin: 0; padding: 10px;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            color: #eee;
+        }
+
+        h1 { color: #fff; margin: 5px 0 10px 0; font-size: 1.5rem; text-align: center; text-shadow: 0 0 10px var(--primary); }
+        .view-panel { background: #1e1e24; padding: 15px; border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.5); width: 100%; max-width: 780px; text-align: center; position: relative; border: 1px solid #333;}
+        .hidden { display: none !important; }
+        h3 { font-size: 1.1rem; margin-top: 5px; color: #64B5F6; }
+        p { font-size: 0.9rem; color: #aaa; margin: 5px 0; }
+
+        /* 頂部控制列 */
+        .top-control-bar {
+            width: 100%; max-width: 780px; display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; background: #25252d; padding: 8px 15px; border-radius: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .music-btn {
+            background: #1a237e; border: 1px solid #303f9f; color: #8c9eff; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: bold; cursor: pointer;
+        }
+        .db-action-group { display: flex; gap: 8px; }
+        .db-btn { background: #333; border: 1px solid #555; color: #eee; padding: 5px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 500; }
+
+        /* 模式切換按鈕 */
+        .mode-selector { display: flex; justify-content: center; gap: 15px; margin: 10px 0; }
+        .mode-tab { padding: 8px 20px; border: 2px solid var(--primary); background: #1e1e24; color: var(--primary); font-weight: bold; border-radius: 20px; cursor: pointer; transition: 0.3s; }
+        .mode-tab.active { background: var(--primary); color: white; }
+
+        /* 選手海選網格 */
+        .grid-select { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; perspective: 1500px; }
+        @media (min-width: 500px) { .grid-select { grid-template-columns: repeat(4, 1fr); } }
+        @media (min-width: 680px) { .grid-select { grid-template-columns: repeat(7, 1fr); gap: 8px; } }
+
+        .character-card { height: 140px; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .character-card.flipped { transform: rotateY(180deg); }
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 8px; border: 2px solid #444; padding: 6px; background: #25252d; }
+        .card-front { z-index: 2; transform: rotateY(0deg); cursor: pointer; }
+        .card-front .avatar { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--primary); display: inline-block; background-size: 700% 300%; background-repeat: no-repeat; }
+        .character-card.selected .card-front { border-color: var(--accent); background: #3e2723; }
+        .character-card.selected-captain .card-front { border-color: #ff5252; background: #4a148c; }
+        .character-card.selected-captain .card-front::after { content: '★先鋒'; position: absolute; top: 2px; right: 2px; background: #ff5252; color: white; font-size: 8px; padding: 1px 3px; border-radius: 3px; }
+        .card-front p { margin: 2px 0; font-size: 11px; font-weight: bold; color: #fff;}
+        .card-back { transform: rotateY(180deg); background: #25252d; }
+        .card-back .avatar { width: 100%; height: 55px; border-radius: 4px; background-size: 700% 300%; background-repeat: no-repeat; }
+        .card-back .mini-stats { font-size: 9px; color: #ccc; text-align: left; width: 100%; line-height: 1.2; margin: 2px 0; }
+
+        /* 戰鬥盤區域 */
+        .status-announcement { background: #1a237e; border-left: 5px solid var(--primary); padding: 10px; margin: 10px 0; border-radius: 4px; text-align: left; font-size: 0.95rem; color: #fff; }
+        .btn { background: var(--primary); color: white; border: none; padding: 12px 35px; font-size: 16px; border-radius: 25px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); width: 100%; max-width: 320px; margin: 10px auto; display: block; }
+        .btn:disabled { background: #555; cursor: not-allowed; color: #888; }
+
+        /* 陀螺戰鬥盤對決容器 */
+        .stadium-container { background: #111; padding: 20px; border-radius: 50%; margin: 25px auto; position: relative; overflow: hidden; width: 300px; height: 300px; border: 8px double #555; display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 0 20px rgba(33,149,243,0.3); }
+        
+        /* 陀螺本體動畫 */
+        .beyblade { position: absolute; display: flex; flex-direction: column; align-items: center; transition: all 0.1s ease; }
+        .beyblade .avatar { width: 50px; height: 50px; border-radius: 50%; border: 3px dashed #fff; background-size: 700% 300%; background-repeat: no-repeat; animation: spin 0.1s linear infinite; box-shadow: 0 0 15px rgba(255,255,255,0.5); }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .p1-blade { left: 40px; top: 120px; }
+        .p2-blade { right: 40px; top: 120px; }
+
+        .score-board { display: flex; justify-content: space-between; width: 100%; max-width: 400px; margin: 0 auto; font-size: 20px; font-weight: bold; background: #25252d; padding: 10px; border-radius: 8px; border: 1px solid #444; }
+        .score-vs { color: var(--accent); }
+
+        /* 頒獎台 */
+        .podium { display: flex; justify-content: center; align-items: flex-end; margin: 20px 0; height: 160px; }
+        .podium-place { display: flex; flex-direction: column; align-items: center; margin: 0 8px; width: 85px; }
+        .podium-place .avatar { width: 55px; height: 55px; border-radius: 50%; border: 2px solid white; background-size: 700% 300%; background-repeat: no-repeat; }
+        .podium-block { width: 100%; color: white; font-weight: bold; font-size: 16px; display: flex; justify-content: center; align-items: center; margin-top: 8px; border-radius: 6px 6px 0 0; text-align: center; padding: 4px 0; }
+        .p-1 { height: 80px; background: #ffd700; order: 2; color: #000; }
+        .p-2 { height: 60px; background: #c0c0c0; order: 1; color: #000; }
+        .p-3 { height: 40px; background: #cd7f32; order: 3; color: #000; }
+        
+        .result-list { text-align: left; width: 100%; max-width: 420px; margin: 0 auto 15px auto; }
+        .result-item { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #333; }
+        .result-item strong { min-width: 65px; font-size: 0.9rem; color: var(--accent); }
+        .result-item span { margin-left: 15px; font-weight: bold; font-size: 0.9rem; flex: 1; }
+        .result-item .avatar { border-radius: 50%; background-size: 700% 300%; background-repeat: no-repeat; border: 1px solid #555; }
+        
+        /* 交互按鈕 */
+        .card-actions { display: flex; gap: 4px; width: 100%; justify-content: space-between; }
+        .action-sub-btn { padding: 3px 0; font-size: 9px; border: none; border-radius: 4px; background: #444; color: #fff; font-weight: bold; cursor: pointer; text-align: center;}
+        .action-sub-btn.join-btn { background: var(--primary); color: white; width: 45%; }
+        .action-sub-btn.flip-btn { background: #555; color: #fff; width: 45%; }
+        .action-sub-btn.full-btn { background: #0D47A1; color: white; width: 100%; margin-top: 3px;}
+        .clear-db-btn { background: none; border: none; color: #ff5252; text-decoration: underline; font-size: 11px; cursor: pointer; margin-top: 15px; display: block; margin-left: auto; margin-right: auto;}
+
+        /* 全螢幕彈窗 */
+        .fullscreen-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.9); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; padding: 15px;}
+        .fullscreen-overlay.active { opacity: 1; pointer-events: auto; }
+        
+        .fullscreen-card-container { width: 260px; height: 380px; perspective: 1500px; cursor: pointer; margin-bottom: 15px; }
+        .fullscreen-card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
+        .fullscreen-card.flipped { transform: rotateY(180deg); }
+        
+        .fs-face-front, .fs-face-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 16px; overflow: hidden; border: 4px solid #444; background: #25252d; }
+        .fs-face-front { z-index: 2; transform: rotateY(0deg); }
+        .fs-face-back { transform: rotateY(180deg); }
+        .fs-avatar { width: 100%; height: 100%; background-size: 700% 300%; background-repeat: no-repeat; }
+        
+        .stat-overlay { background: #25252d; padding: 15px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); color: #fff; text-align: center; border: 1px solid #444; }
+        .stat-grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; }
+        .stat-text { background: #1e1e24; padding: 6px; border-radius: 4px; text-align: left; padding-left: 12px;}
+        .stat-text span { color: #2196F3; font-weight: bold; font-size: 15px; font-family: monospace; }
+        .fs-tip { font-size: 11px; color: #777; margin: 4px 0 10px 0; font-style: italic; }
+        .close-fs-btn { background: #ff5252; color: white; border: none; padding: 8px 20px; font-size: 12px; border-radius: 15px; cursor: pointer; font-weight: bold; margin-top: 10px; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <h1>💥 馬尾少女戰鬥陀螺極限對決盤 ⚙️</h1>
+
+    <div class="top-control-bar">
+        <button class="music-btn" id="music-toggle-btn" onclick="toggleSynthMusic(event)">🎮 啟動晶片音效：Lobby 模式 🔌</button>
+        <div class="db-action-group">
+            <button class="db-btn" onclick="exportJSON()">📥 備份 JSON</button>
+            <button class="db-btn" onclick="document.getElementById('import-input').click()">📤 還原 JSON</button>
+            <input type="file" id="import-input" accept=".json" class="hidden" onchange="importJSON(this)">
+        </div>
+    </div>
+
+    <div class="mode-selector" id="mode-selector-bar">
+        <button class="mode-tab active" id="tab-single" onclick="switchGameMode('single')">🥇 1vs1 淘汰賽 (選4位)</button>
+        <button class="mode-tab" id="tab-relay" onclick="switchGameMode('relay')">🔥 3vs3 戰隊車輪戰 (選3位)</button>
+    </div>
+
+    <div id="setup-view" class="view-panel">
+        <h3 id="lobby-title">【陀螺大廳】請挑選 4 位選手參加一對一淘汰賽</h3>
+        <p id="select-tip">目前已選擇：0 / 4 位</p>
+        <div class="grid-select" id="grid-select"></div>
+        <button id="start-btn" class="btn" disabled onclick="triggerRaceStart()">3, 2, 1, Go~ Shoot!</button>
+        <button class="clear-db-btn" onclick="clearData()">⚠️ 清除所有選手地端戰績</button>
+    </div>
+
+    <div id="race-view" class="view-panel hidden">
+        <h3 id="race-title">戰鬥陀螺激烈碰撞中...</h3>
+        
+        <div class="score-board">
+            <span id="p1-name">選手 A</span>
+            <span id="score-text">0 : 0</span>
+            <span id="p2-name">選手 B</span>
+        </div>
+
+        <div class="stadium-container" id="stadium">
+            <div class="beyblade p1-blade" id="p1-node">
+                <div class="avatar" id="p1-avatar"></div>
+            </div>
+            <div class="beyblade p2-blade" id="p2-node">
+                <div class="avatar" id="p2-avatar"></div>
+            </div>
+        </div>
+
+        <div class="status-announcement" id="race-announcement">準備發射...</div>
+        <button id="next-stage-btn" class="btn hidden" onclick="advanceStage()">前進下一輪對決</button>
+    </div>
+
+    <div id="result-view" class="view-panel hidden">
+        <h2 id="result-header">🏆 最終排名 🏆</h2>
+        <p>（戰績數據已即時同步更新保存至選手卡中）</p>
+        <div class="podium" id="podium"></div>
+        <div class="result-list" id="result-list"></div>
+        <button class="btn" onclick="resetGame()">返回備戰大廳</button>
+    </div>
+
+    <!-- 放大數據彈窗 -->
+    <div class="fullscreen-overlay" id="fs-overlay" onclick="closeFullscreen()">
+        <div class="fullscreen-card-container" onclick="event.stopPropagation(); flipFullscreenCard();">
+            <div class="fullscreen-card" id="fs-card">
+                <div class="fs-face-front"><div class="fs-avatar" id="fs-img-front"></div></div>
+                <div class="fs-face-back"><div class="fs-avatar" id="fs-img-back"></div></div>
+            </div>
+        </div>
+        <div class="stat-overlay" onclick="event.stopPropagation();">
+            <p id="fs-title" style="margin:2px 0; font-weight:bold; color:#64B5F6; font-size:16px;">選手戰績</p>
+            <p class="fs-tip">💡 點擊上方大卡片可使卡片 3D 翻面</p>
+            <div class="stat-grid-layout">
+                <div class="stat-text">總出賽次數：<span id="fs-stat-m">0</span> 次</div>
+                <div class="stat-text">對決晉級數：<span id="fs-stat-q">0</span> 次</div>
+                <div class="stat-text">冠軍金牌數：<span id="fs-stat-g">0</span> 次</div>
+                <div class="stat-text">最高名次：<span id="fs-stat-b">-</span></div>
+            </div>
+            <button class="close-fs-btn" onclick="closeFullscreen()">關閉放大卡片</button>
+        </div>
+    </div>
+
+    <script>
+        const totalRunners = 21;
+        const cols = 7;
+        let gameMode = 'single'; 
+        const poolRunners = []; 
+        let qualifiedRunners = []; 
+        let currentMatchRunners = []; 
+        let currentStage = 'Semi1'; // Semi1, Semi2, Final
+        let matchScore = { p1: 0, p2: 0 };
+        let raceInterval;
+
+        let relayMatchIndex = 0; // 3vs3 車輪戰進度
+        let relayScores = { user: 0, cpu: 0 };
+        let cpuTeamRunners = [];
+
+        /* ==================== ⚡ 晶片音效引擎 ==================== */
+        let audioCtx = null;
+        let sequencerStep = 0;
+        let sequencerTimer = null;
+        let isSynthMuted = true;
+        let synthMode = 'lobby'; 
+
+        const lobbyMelody = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50];
+        const lobbySequence = [0, 2, 4, 2, 5, 4, 2, 4, 7, 6, 5, 4, 3, 2, 1, 0];
+
+        function toggleSynthMusic(event) {
+            if (event) event.stopPropagation();
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            isSynthMuted = !isSynthMuted;
+            const btn = document.getElementById('music-toggle-btn');
+            if (isSynthMuted) {
+                btn.innerText = "🎮 音樂：已關閉 🔇"; btn.style.background = "#1a237e"; stopSequencer();
+            } else {
+                btn.innerText = `🎮 音樂：陀螺電玩風格(${synthMode.toUpperCase()}) 🔊`; btn.style.background = "#0d47a1"; audioCtx.resume(); startSequencer();
+            }
+        }
+
+        function startSequencer() {
+            stopSequencer();
+            let tempo = synthMode === 'lobby' ? 130 : 90;
+            sequencerTimer = setInterval(() => {
+                if (isSynthMuted || !audioCtx) return;
+                playSynthTone();
+            }, tempo);
+        }
+
+        function playSynthTone() {
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+            osc.type = 'sawtooth';
+
+            if (synthMode === 'lobby') {
+                const noteIndex = lobbySequence[sequencerStep % lobbySequence.length];
+                osc.frequency.setValueAtTime(lobbyMelody[noteIndex], audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.03, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+            } else {
+                const baseFreq = (sequencerStep % 2 === 0) ? 600 : 300;
+                osc.frequency.setValueAtTime(baseFreq + (Math.random() * 100), audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            }
+            sequencerStep++;
+        }
+
+        function stopSequencer() { if (sequencerTimer) { clearInterval(sequencerTimer); sequencerTimer = null; } }
+        function updateSynthState(mode) {
+            synthMode = mode;
+            const btn = document.getElementById('music-toggle-btn');
+            if(!isSynthMuted) {
+                btn.innerText = `🎮 音樂：陀螺電玩風格(${mode.toUpperCase()}) 🔊`;
+                startSequencer();
+            }
+        }
+
+        /* ==================== 💾 地端資料庫 ==================== */
+        let statsDB = JSON.parse(localStorage.getItem('beyblade_girls_db_v1'));
+        if (!statsDB) { initDefaultDB(); }
+        function initDefaultDB() {
+            statsDB = {};
+            for (let i = 0; i < totalRunners; i++) {
+                statsDB[i] = { matches: 0, qualified: 0, gold: 0, bestPlace: '-' };
+            }
+            localStorage.setItem('beyblade_girls_db_v1', JSON.stringify(statsDB));
+        }
+
+        function switchGameMode(mode) {
+            gameMode = mode;
+            poolRunners.length = 0; qualifiedRunners.length = 0;
+            document.getElementById('tab-single').className = mode === 'single' ? 'mode-tab active' : 'mode-tab';
+            document.getElementById('tab-relay').className = mode === 'relay' ? 'mode-tab active' : 'mode-tab';
+            
+            document.getElementById('lobby-title').innerText = mode === 'single' ? '【陀螺大廳】請挑選 4 位選手參加一對一淘汰賽' : '【3vs3 戰隊車輪戰】請挑選 3 位組成代表隊 (依序進行 1vs1 對決)';
+            document.getElementById('start-btn').innerText = mode === 'single' ? '開始準決賽 (第一組)' : '發射！戰隊車輪大賽開打';
+            
+            updateSelectTip();
+            renderCharacterCards();
+        }
+
+        function updateSelectTip() {
+            const req = gameMode === 'single' ? 4 : 3;
+            document.getElementById('select-tip').innerText = `目前已選擇：${poolRunners.length} / ${req} 位選手`;
+            document.getElementById('start-btn').disabled = poolRunners.length !== req;
+        }
+
+        const gridSelect = document.getElementById('grid-select');
+        renderCharacterCards();
+
+        function renderCharacterCards() {
+            gridSelect.innerHTML = '';
+            for (let i = 0; i < totalRunners; i++) {
+                const r = Math.floor(i / cols), c = i % cols;
+                const posX = (c / (cols - 1)) * 100, posY = (r / (3 - 1)) * 100;
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'character-card'; cardWrapper.id = `card-wrapper-${i}`;
+
+                const s = statsDB[i] || { matches: 0, qualified: 0, gold: 0, bestPlace: '-' };
+                cardWrapper.innerHTML = `
+                    <div class="card-front" onclick="flipCard(event, ${i})">
+                        <div class="avatar" style="background-image: var(--bg-grid-0); background-position: ${posX}% ${posY}%;"></div>
+                        <p>${i+1}號少女</p>
+                        <div style="width:100%;" onclick="event.stopPropagation();">
+                            <div class="card-actions">
+                                <button class="action-sub-btn join-btn" onclick="handleSelect(event, ${i})">${gameMode==='single'?'參賽':'選入'}</button>
+                                <button class="action-sub-btn flip-btn" onclick="flipCard(event, ${i})">戰績</button>
+                            </div>
+                            <button class="action-sub-btn full-btn" onclick="openFullscreen(${i}, ${posX}, ${posY})">🔎 放大數據</button>
+                        </div>
+                    </div>
+                    <div class="card-back" onclick="event.stopPropagation(); flipCard(event, ${i})">
+                        <div class="avatar" style="background-image: var(--bg-grid-1); background-position: ${posX}% ${posY}%;"></div>
+                        <div class="mini-stats">場:${s.matches} 晉:${s.qualified}<br>冠:${s.gold} 最佳:${s.bestPlace}</div>
+                        <button class="action-sub-btn flip-btn" style="width:100%; margin-top:2px;" onclick="event.stopPropagation(); flipCard(event, ${i})">返回正面</button>
+                    </div>
+                `;
+                gridSelect.appendChild(cardWrapper);
+            }
+        }
+
+        function flipCard(event, id) { event.stopPropagation(); document.getElementById(`card-wrapper-${id}`).classList.toggle('flipped'); }
+        
+        function openFullscreen(id, posX, posY) {
+            const s = statsDB[id] || { matches: 0, qualified: 0, gold: 0, bestPlace: '-' };
+            document.getElementById('fs-title').innerText = `⚙️ ${id+1}號 陀螺生涯數據`;
+            document.getElementById('fs-stat-m').innerText = s.matches;
+            document.getElementById('fs-stat-q').innerText = s.qualified;
+            document.getElementById('fs-stat-g').innerText = s.gold;
+            document.getElementById('fs-stat-b').innerText = s.bestPlace;
+            
+            document.getElementById('fs-card').classList.remove('flipped');
+            document.getElementById('fs-img-front').style.backgroundImage = 'var(--bg-grid-0)';
+            document.getElementById('fs-img-front').style.backgroundPosition = `${posX}% ${posY}%`;
+            document.getElementById('fs-img-back').style.backgroundImage = 'var(--bg-grid-1)';
+            document.getElementById('fs-img-back').style.backgroundPosition = `${posX}% ${posY}%`;
+            
+            document.getElementById('fs-overlay').classList.add('active');
+        }
+        function flipFullscreenCard() { document.getElementById('fs-card').classList.toggle('flipped'); }
+        function closeFullscreen() { document.getElementById('fs-overlay').classList.remove('active'); }
+
+        function handleSelect(event, id) {
+            event.stopPropagation();
+            const card = document.getElementById(`card-wrapper-${id}`);
+            const index = poolRunners.findIndex(r => r.id === id);
+            const r = Math.floor(id / cols), c = id % cols;
+            const posX = (c / (cols - 1)) * 100, posY = (r / (3 - 1)) * 100;
+
+            if (index > -1) {
+                poolRunners.splice(index, 1);
+                card.className = 'character-card';
+            } else {
+                const limit = gameMode === 'single' ? 4 : 3;
+                if (poolRunners.length >= limit) return;
+                poolRunners.push({ id, name: `${id+1}號選手`, posX, posY });
+            }
+
+            document.querySelectorAll('.character-card').forEach(cc => {
+                const cid = parseInt(cc.dataset.id || cc.id.replace('card-wrapper-',''));
+                const pIdx = poolRunners.findIndex(pr => pr.id === cid);
+                if(pIdx === -1) cc.className = 'character-card';
+                else if(gameMode === 'relay' && pIdx === 0) cc.className = 'character-card selected-captain';
+                else cc.className = 'character-card selected';
+            });
+
+            updateSelectTip();
+        }
+
+        function triggerRaceStart() {
+            poolRunners.forEach(runner => { statsDB[runner.id].matches += 1; });
+            localStorage.setItem('beyblade_girls_db_v1', JSON.stringify(statsDB));
+
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('mode-selector-bar').classList.add('hidden');
+            document.getElementById('race-view').classList.remove('hidden');
+
+            updateSynthState('race');
+            if (gameMode === 'single') {
+                currentStage = 'Semi1';
+                setupSingleBattle();
+            } else {
+                setupRelayBattle();
+            }
+        }
+
+        /* ==================== 🥇 1vs1 淘汰賽引擎 ==================== */
+        function setupSingleBattle() {
+            document.getElementById('next-stage-btn').classList.add('hidden');
+            matchScore = { p1: 0, p2: 0 };
+            document.getElementById('score-text').innerText = "0 : 0";
+
+            if (currentStage === 'Semi1') {
+                document.getElementById('race-title').innerText = `💥 準決賽 第一組 (正式對決搶3分)`;
+                currentMatchRunners = [poolRunners[0], poolRunners[1]];
+            } else if (currentStage === 'Semi2') {
+                document.getElementById('race-title').innerText = `💥 準決賽 第二組 (正式對決搶3分)`;
+                currentMatchRunners = [poolRunners[2], poolRunners[3]];
+            } else if (currentStage === 'Final') {
+                document.getElementById('race-title').innerText = `🔥 決賽最高殿堂 (冠軍爭霸戰)`;
+                currentMatchRunners = [qualifiedRunners[0], qualifiedRunners[1]];
+            }
+
+            document.getElementById('p1-name').innerText = currentMatchRunners[0].name;
+            document.getElementById('p2-name').innerText = currentMatchRunners[1].name;
+            document.getElementById('p1-avatar').style.backgroundPosition = `${currentMatchRunners[0].posX}% ${currentMatchRunners[0].posY}%`;
+            document.getElementById('p2-avatar').style.backgroundPosition = `${currentMatchRunners[1].posX}% ${currentMatchRunners[1].posY}%`;
+
+            startNewRound();
+        }
+
+        function startNewRound() {
+            document.getElementById('race-announcement').innerText = "3, 2, 1... Go~ Shoot!! 陀螺進入戰鬥盤！";
+            
+            // 重置陀螺初始位置
+            const p1Node = document.getElementById('p1-node');
+            const p2Node = document.getElementById('p2-node');
+            p1Node.style.left = "40px"; p1Node.style.top = "120px";
+            p2Node.style.right = "40px"; p2Node.style.top = "120px";
+
+            let timer = 0;
+            raceInterval = setInterval(() => {
+                timer += 50;
+                // 模擬迴轉抖動與碰撞
+                let p1X = 40 + Math.sin(timer/100)*20 + Math.random()*15;
+                let p1Y = 120 + Math.cos(timer/100)*20 + Math.random()*15;
+                let p2X = 40 + Math.sin(timer/100 + Math.PI)*20 + Math.random()*15;
+                let p2Y = 120 + Math.cos(timer/100 + Math.PI)*20 + Math.random()*15;
+
+                // 逐漸往中心靠攏碰撞
+                if (timer < 1500) {
+                    p1X += (timer/1500) * 50;
+                    p2X += (timer/1500) * 50;
+                }
+
+                p1Node.style.left = p1X + 'px'; p1Node.style.top = p1Y + 'px';
+                p2Node.style.right = p2X + 'px'; p2Node.style.top = p2Y + 'px';
+
+                if (timer >= 2000) {
+                    clearInterval(raceInterval);
+                    evaluateRoundWinner();
+                }
+            }, 50);
+        }
+
+        function evaluateRoundWinner() {
+            const p1Win = Math.random() > 0.5;
+            const finishType = Math.random();
+            let points = 1;
+            let typeText = "";
+
+            if (finishType < 0.3) {
+                typeText = "【擊爆勝利 Burst Finish】";
+                points = 2; // 正式規則擊爆通常得2分
+            } else if (finishType < 0.6) {
+                typeText = "【擊出體外 Over Finish】";
+                points = 1;
+            } else {
+                typeText = "【持久勝利 Spin Finish】";
+                points = 1;
+            }
+
+            if (p1Win) {
+                matchScore.p1 += points;
+                document.getElementById('race-announcement').innerHTML = `💥 ${currentMatchRunners[0].name} 以 ${typeText} 獲得 ${points} 分！`;
+            } else {
+                matchScore.p2 += points;
+                document.getElementById('race-announcement').innerHTML = `💥 ${currentMatchRunners[1].name} 以 ${typeText} 獲得 ${points} 分！`;
+            }
+
+            document.getElementById('score-text').innerText = `${matchScore.p1} : ${matchScore.p2}`;
+
+            if (matchScore.p1 >= 3 || matchScore.p2 >= 3) {
+                handleMatchEnd();
+            } else {
+                setTimeout(startNewRound, 1500);
+            }
+        }
+
+        function handleMatchEnd() {
+            const winner = matchScore.p1 >= 3 ? currentMatchRunners[0] : currentMatchRunners[1];
+            const nextBtn = document.getElementById('next-stage-btn');
+            
+            if (currentStage === 'Semi1' || currentStage === 'Semi2') {
+                statsDB[winner.id].qualified += 1;
+                localStorage.setItem('beyblade_girls_db_v1', JSON.stringify(statsDB));
+                qualifiedRunners.push(winner);
+
+                document.getElementById('race-announcement').innerHTML = `🏁 <b>本組對決結束！</b><br>晉級決賽：${winner.name}`;
+                nextBtn.innerText = currentStage === 'Semi1' ? "進行準決賽第二組" : "進入最終冠軍賽";
+                nextBtn.classList.remove('hidden');
+            } else if (currentStage === 'Final') {
+                document.getElementById('race-announcement').innerText = "冠軍誕生！正在儲存最新戰績...";
+                statsDB[winner.id].gold += 1;
+
+                const loser = matchScore.p1 >= 3 ? currentMatchRunners[1] : currentMatchRunners[0];
+                
+                // 更新最高名次存檔
+                [[winner, 1], [loser, 2]].forEach(([runner, place]) => {
+                    const curBest = statsDB[runner.id].bestPlace;
+                    if (curBest === '-' || place < parseInt(curBest)) statsDB[runner.id].bestPlace = `第 ${place} 名`;
+                });
+                
+                localStorage.setItem('beyblade_girls_db_v1', JSON.stringify(statsDB));
+                setTimeout(() => showFinalPodiumDisplay(), 1200);
+            }
+        }
+
+        function advanceStage() {
+            if (gameMode === 'single') {
+                if (currentStage === 'Semi1') {
+                    currentStage = 'Semi2'; setupSingleBattle();
+                } else if (currentStage === 'Semi2') {
+                    currentStage = 'Final'; setupSingleBattle();
+                }
+            } else {
+                showFinalPodiumDisplay();
+            }
+        }
+
+        /* ==================== 🔄 3vs3 戰隊車輪戰引擎 ==================== */
+        function setupRelayBattle() {
+            document.getElementById('race-title').innerText = "🔥 3vs3 戰隊車輪戰 (1vs1 輪流上場搶分)";
+            document.getElementById('next-stage-btn').classList.add('hidden');
+            
+            relayMatchIndex = 0;
+            relayScores = { user: 0, cpu: 0 };
+            document.getElementById('score-text').innerText = "0 : 0";
+
+            // 生成 CPU 隊伍
+            cpuTeamRunners = [];
+            for(let b=0; b<3; b++){
+                let rId = Math.floor(Math.random() * totalRunners);
+                let row = Math.floor(rId / cols), col = rId % cols;
+                cpuTeamRunners.push({ id: rId, name: `NPC-${rId+1}`, posX: (col/(cols-1))*100, posY: (row/(3-1))*100 });
+            }
+
+            startRelayRound();
+        }
+
+        function startRelayRound() {
+            let uRunner = poolRunners[relayMatchIndex];
+            let cRunner = cpuTeamRunners[relayMatchIndex];
+
+            document.getElementById('p1-name').innerText = `(玩家)${uRunner.name}`;
+            document.getElementById('p2-name').innerText = `(電腦)${cRunner.name}`;
+            document.getElementById('p1-avatar').style.backgroundPosition = `${uRunner.posX}% ${uRunner.posY}%`;
+            document.getElementById('p2-avatar').style.backgroundPosition = `${cRunner.posX}% ${cRunner.posY}%`;
+
+            document.getElementById('race-announcement').innerText = `第 ${relayMatchIndex+1} 回合對決準備發射！`;
+
+            setTimeout(() => {
+                let timer = 0;
+                raceInterval = setInterval(() => {
+                    timer += 50;
+                    if(timer >= 1500) {
+                        clearInterval(raceInterval);
+                        let userWin = Math.random() > 0.48; // 玩家微幅優勢
+                        if(userWin) { relayScores.user++; } else { relayScores.cpu++; }
+                        document.getElementById('score-text').innerText = `${relayScores.user} : ${relayScores.cpu}`;
+                        document.getElementById('race-announcement').innerText = userWin ? `🎉 ${uRunner.name} 拿下這一局！` : `❌ ${cRunner.name} 拿下這一局！`;
+
+                        setTimeout(() => {
+                            relayMatchIndex++;
+                            if(relayMatchIndex < 3) {
+                                startRelayRound();
+                            } else {
+                                handleRelayBattleEnd();
+                            }
+                        }, 1500);
+                    }
+                }, 50);
+            }, 1000);
+        }
+
+        function handleRelayBattleEnd() {
+            if(relayScores.user > relayScores.cpu) {
+                poolRunners.forEach(r => { statsDB[r.id].gold += 1; });
+                document.getElementById('race-announcement').innerHTML = "🎉 <b>戰隊車輪戰勝利！玩家代表隊成功制霸！</b>";
+            } else {
+                document.getElementById('race-announcement').innerHTML = "❌ <b>戰隊車輪戰戰敗！下次再接再厲！</b>";
+            }
+
+            poolRunners.forEach(r => {
+                const place = relayScores.user > relayScores.cpu ? 1 : 2;
+                statsDB[r.id].bestPlace = `戰隊第 ${place} 名`;
+            });
+            localStorage.setItem('beyblade_girls_db_v1', JSON.stringify(statsDB));
+
+            const nextBtn = document.getElementById('next-stage-btn');
+            nextBtn.innerText = "查看最終頒獎台"; nextBtn.classList.remove('hidden');
+        }
+
+        /* ==================== 🏆 結算顯示面板 ==================== */
+        function showFinalPodiumDisplay() {
+            document.getElementById('race-view').classList.add('hidden');
+            document.getElementById('result-view').classList.remove('hidden');
+            updateSynthState('lobby');
+
+            const podium = document.getElementById('podium'); podium.innerHTML = '';
+            const resultList = document.getElementById('result-list'); resultList.innerHTML = '<h3>名次總榜單：</h3>';
+
+            if (gameMode === 'single') {
+                document.getElementById('result-header').innerText = "🏆 陀螺淘汰賽最終排名 🏆";
+                let winner = matchScore.p1 >= 3 ? currentMatchRunners[0] : currentMatchRunners[1];
+                let runnerUp = matchScore.p1 >= 3 ? currentMatchRunners[1] : currentMatchRunners[0];
+
+                [[winner, 1], [runnerUp, 2]].forEach(([runner, place]) => {
+                    if (place <= 2) {
+                        const pDiv = document.createElement('div'); pDiv.className = `podium-place`;
+                        pDiv.style.order = place === 1 ? 2 : 1;
+                        pDiv.innerHTML = `<div class="avatar" style="background-image: var(--bg-grid-0); background-position: ${runner.posX}% ${runner.posY}%;"></div>
+                            <div class="podium-block p-${place}">第 ${place} 名</div>`;
+                        podium.appendChild(pDiv);
+                    }
+                    const rDiv = document.createElement('div'); rDiv.className = 'result-item';
+                    rDiv.innerHTML = `<strong>第 ${place} 名</strong><div class="avatar" style="width:36px; height:36px; margin-left:10px; background-image: var(--bg-grid-0); background-position: ${runner.posX}% ${runner.posY}%;"></div><span>${runner.name}</span>`;
+                    resultList.appendChild(rDiv);
+                });
+            } else {
+                document.getElementById('result-header').innerText = "🏆 戰隊車輪戰最終結果 🏆";
+                const isUserWin = relayScores.user > relayScores.cpu;
+                
+                const rDiv = document.createElement('div'); rDiv.className = 'result-item';
+                rDiv.innerHTML = `<strong>${isUserWin?'👑 獲勝':'戰敗'}</strong><span>玩家代表隊 (${relayScores.user}分) vs 電腦戰隊 (${relayScores.cpu}分)</span>`;
+                resultList.appendChild(rDiv);
+            }
+        }
+
+        function resetGame() {
+            poolRunners.length = 0; qualifiedRunners.length = 0; currentMatchRunners.length = 0;
+            clearInterval(raceInterval);
+            
+            document.getElementById('result-view').className = 'view-panel hidden';
+            document.getElementById('race-view').className = 'view-panel hidden';
+            document.getElementById('setup-view').className = 'view-panel';
+            document.getElementById('mode-selector-bar').className = 'mode-selector';
+            
+            updateSynthState('lobby');
+            updateSelectTip(); renderCharacterCards();
+        }
+
+        function clearData() {
+            if(confirm("確定要刪除地端所有選手的歷史勝負數據嗎？")) { localStorage.removeItem('beyblade_girls_db_v1'); location.reload(); }
+        }
+
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(statsDB, null, 4));
+            const dl = document.createElement('a'); dl.setAttribute("href", dataStr);
+            dl.setAttribute("download", `陀螺少女戰績庫_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(dl); dl.click(); dl.remove();
+        }
+        function importJSON(input) {
+            const file = input.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const d = JSON.parse(e.target.result);
+                    if (typeof d === 'object' && d['0']) {
+                        statsDB = d; localStorage.setItem('beyblade_girls_db_v1', JSON.stringify(statsDB));
+                        alert("🎉 數據還原成功！"); renderCharacterCards();
+                    }
+                } catch(c) { alert("檔案讀取失敗。"); }
+            };
+            reader.readAsText(file); input.value = '';
+        }
+    </script>
+</body>
+</html>
