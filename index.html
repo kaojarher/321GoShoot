@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>馬尾少女戰鬥陀螺錦標賽 (1vs1 正式對決版)</title>
+    <title>馬尾少女戰鬥陀螺錦標賽 (1vs1 頂級動態整合版)</title>
     <style>
         :root {
             --primary: #2196F3;
@@ -62,19 +62,49 @@
         .card-back .avatar { width: 100%; height: 55px; border-radius: 4px; background-size: 700% 300%; background-repeat: no-repeat; }
         .card-back .mini-stats { font-size: 9px; color: #ccc; text-align: left; width: 100%; line-height: 1.2; margin: 2px 0; }
 
-        /* 戰鬥盤區域 */
+        /* 跑道區域 */
         .status-announcement { background: #1a237e; border-left: 5px solid var(--primary); padding: 10px; margin: 10px 0; border-radius: 4px; text-align: left; font-size: 0.95rem; color: #fff; }
         .btn { background: var(--primary); color: white; border: none; padding: 12px 35px; font-size: 16px; border-radius: 25px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); width: 100%; max-width: 320px; margin: 10px auto; display: block; }
         .btn:disabled { background: #555; cursor: not-allowed; color: #888; }
 
         /* 陀螺戰鬥盤對決容器 */
-        .stadium-container { background: #111; padding: 20px; border-radius: 50%; margin: 25px auto; position: relative; overflow: hidden; width: 300px; height: 300px; border: 8px double #555; display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 0 20px rgba(33,149,243,0.3); }
+        .stadium-container { 
+            background: #111; padding: 20px; border-radius: 50%; margin: 25px auto; 
+            position: relative; overflow: hidden; width: 300px; height: 300px; 
+            border: 8px double #555; display: flex; justify-content: center; align-items: center; 
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 0 20px rgba(33,149,243,0.3); 
+        }
         
-        /* 陀螺本體動畫 */
-        .beyblade { position: absolute; display: flex; flex-direction: column; align-items: center; transition: all 0.1s ease; }
-        .beyblade .avatar { width: 50px; height: 50px; border-radius: 50%; border: 3px dashed #fff; background-size: 700% 300%; background-repeat: no-repeat; animation: spin 0.1s linear infinite; box-shadow: 0 0 15px rgba(255,255,255,0.5); }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        /* 陀螺本體控制與硬體加速 */
+        .beyblade { 
+            position: absolute; display: flex; flex-direction: column; align-items: center; 
+            transition: all 0.05s linear; will-change: left, top;
+        }
         
+        /* 陀螺核心頭像：強制極速旋轉與鋸齒外框特效 */
+        .beyblade .avatar { 
+            width: 50px; height: 50px; border-radius: 50%; 
+            border: 3px dashed #ff5252; /* 旋轉時虛線會產生類似合金鋸齒的動態殘影 */
+            background-size: 700% 300%; background-repeat: no-repeat; 
+            box-shadow: 0 0 15px rgba(255,255,255,0.7), inset 0 0 10px rgba(0,0,0,0.5);
+            
+            -webkit-animation: spin-effect 0.15s linear infinite !important;
+            animation: spin-effect 0.15s linear infinite !important; 
+        }
+        
+        /* 右側對手陀螺顏色區隔 */
+        .p2-blade .avatar { border-color: #2196F3; }
+
+        /* 旋轉動畫定義 */
+        @-webkit-keyframes spin-effect {
+            0% { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+        }
+        @keyframes spin-effect {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .p1-blade { left: 40px; top: 120px; }
         .p2-blade { right: 40px; top: 120px; }
 
@@ -181,7 +211,6 @@
         <button class="btn" onclick="resetGame()">返回備戰大廳</button>
     </div>
 
-    <!-- 放大數據彈窗 -->
     <div class="fullscreen-overlay" id="fs-overlay" onclick="closeFullscreen()">
         <div class="fullscreen-card-container" onclick="event.stopPropagation(); flipFullscreenCard();">
             <div class="fullscreen-card" id="fs-card">
@@ -213,7 +242,7 @@
         let matchScore = { p1: 0, p2: 0 };
         let raceInterval;
 
-        let relayMatchIndex = 0; // 3vs3 車輪戰進度
+        let relayMatchIndex = 0; 
         let relayScores = { user: 0, cpu: 0 };
         let cpuTeamRunners = [];
 
@@ -428,8 +457,14 @@
 
             document.getElementById('p1-name').innerText = currentMatchRunners[0].name;
             document.getElementById('p2-name').innerText = currentMatchRunners[1].name;
-            document.getElementById('p1-avatar').style.backgroundPosition = `${currentMatchRunners[0].posX}% ${currentMatchRunners[0].posY}%`;
-            document.getElementById('p2-avatar').style.backgroundPosition = `${currentMatchRunners[1].posX}% ${currentMatchRunners[1].posY}%`;
+            
+            // 修正點：確保對戰時兩邊陀螺能完美讀取並顯示對應少女的剪影頭像
+            const p1Ava = document.getElementById('p1-avatar');
+            const p2Ava = document.getElementById('p2-avatar');
+            p1Ava.style.backgroundImage = 'var(--bg-grid-1)';
+            p1Ava.style.backgroundPosition = `${currentMatchRunners[0].posX}% ${currentMatchRunners[0].posY}%`;
+            p2Ava.style.backgroundImage = 'var(--bg-grid-1)';
+            p2Ava.style.backgroundPosition = `${currentMatchRunners[1].posX}% ${currentMatchRunners[1].posY}%`;
 
             startNewRound();
         }
@@ -437,35 +472,44 @@
         function startNewRound() {
             document.getElementById('race-announcement').innerText = "3, 2, 1... Go~ Shoot!! 陀螺進入戰鬥盤！";
             
-            // 重置陀螺初始位置
             const p1Node = document.getElementById('p1-node');
             const p2Node = document.getElementById('p2-node');
-            p1Node.style.left = "40px"; p1Node.style.top = "120px";
-            p2Node.style.right = "40px"; p2Node.style.top = "120px";
+            
+            // 重置初始對角發射點
+            p1Node.style.left = "40px"; p1Node.style.top = "60px";
+            p2Node.style.left = "210px"; p2Node.style.top = "180px";
 
             let timer = 0;
+            // 縮短採樣至 30ms，讓旋轉與運動碰撞軌跡極致流暢
             raceInterval = setInterval(() => {
-                timer += 50;
-                // 模擬迴轉抖動與碰撞
-                let p1X = 40 + Math.sin(timer/100)*20 + Math.random()*15;
-                let p1Y = 120 + Math.cos(timer/100)*20 + Math.random()*15;
-                let p2X = 40 + Math.sin(timer/100 + Math.PI)*20 + Math.random()*15;
-                let p2Y = 120 + Math.cos(timer/100 + Math.PI)*20 + Math.random()*15;
-
-                // 逐漸往中心靠攏碰撞
-                if (timer < 1500) {
-                    p1X += (timer/1500) * 50;
-                    p2X += (timer/1500) * 50;
-                }
+                timer += 30;
+                
+                // 模擬陀螺在戰鬥盤中央做高速旋轉向心力對撞
+                let p1X = 120 + Math.sin(timer / 80) * 50 + (Math.random() * 12 - 6);
+                let p1Y = 120 + Math.cos(timer / 80) * 50 + (Math.random() * 12 - 6);
+                
+                let p2X = 120 + Math.sin((timer / 80) + Math.PI) * 45 + (Math.random() * 12 - 6);
+                let p2Y = 120 + Math.cos((timer / 80) + Math.PI) * 45 + (Math.random() * 12 - 6);
 
                 p1Node.style.left = p1X + 'px'; p1Node.style.top = p1Y + 'px';
-                p2Node.style.right = p2X + 'px'; p2Node.style.top = p2Y + 'px';
+                p2Node.style.left = p2X + 'px'; p2Node.style.top = p2Y + 'px';
 
-                if (timer >= 2000) {
+                // 碰撞點隨機激發火花效果（高對比度閃爍）
+                if (timer % 150 === 0 && Math.abs(p1X - p2X) < 30) {
+                    p1Node.style.filter = "brightness(1.6) contrast(1.3)";
+                    p2Node.style.filter = "brightness(1.6) contrast(1.3)";
+                } else {
+                    p1Node.style.filter = "none";
+                    p2Node.style.filter = "none";
+                }
+
+                if (timer >= 2500) {
                     clearInterval(raceInterval);
+                    p1Node.style.filter = "none";
+                    p2Node.style.filter = "none";
                     evaluateRoundWinner();
                 }
-            }, 50);
+            }, 30);
         }
 
         function evaluateRoundWinner() {
@@ -476,7 +520,7 @@
 
             if (finishType < 0.3) {
                 typeText = "【擊爆勝利 Burst Finish】";
-                points = 2; // 正式規則擊爆通常得2分
+                points = 2; 
             } else if (finishType < 0.6) {
                 typeText = "【擊出體外 Over Finish】";
                 points = 1;
@@ -520,7 +564,6 @@
 
                 const loser = matchScore.p1 >= 3 ? currentMatchRunners[1] : currentMatchRunners[0];
                 
-                // 更新最高名次存檔
                 [[winner, 1], [loser, 2]].forEach(([runner, place]) => {
                     const curBest = statsDB[runner.id].bestPlace;
                     if (curBest === '-' || place < parseInt(curBest)) statsDB[runner.id].bestPlace = `第 ${place} 名`;
@@ -528,18 +571,6 @@
                 
                 localStorage.setItem('beyblade_girls_db_v1', JSON.stringify(statsDB));
                 setTimeout(() => showFinalPodiumDisplay(), 1200);
-            }
-        }
-
-        function advanceStage() {
-            if (gameMode === 'single') {
-                if (currentStage === 'Semi1') {
-                    currentStage = 'Semi2'; setupSingleBattle();
-                } else if (currentStage === 'Semi2') {
-                    currentStage = 'Final'; setupSingleBattle();
-                }
-            } else {
-                showFinalPodiumDisplay();
             }
         }
 
@@ -552,7 +583,6 @@
             relayScores = { user: 0, cpu: 0 };
             document.getElementById('score-text').innerText = "0 : 0";
 
-            // 生成 CPU 隊伍
             cpuTeamRunners = [];
             for(let b=0; b<3; b++){
                 let rId = Math.floor(Math.random() * totalRunners);
@@ -569,18 +599,38 @@
 
             document.getElementById('p1-name').innerText = `(玩家)${uRunner.name}`;
             document.getElementById('p2-name').innerText = `(電腦)${cRunner.name}`;
-            document.getElementById('p1-avatar').style.backgroundPosition = `${uRunner.posX}% ${uRunner.posY}%`;
-            document.getElementById('p2-avatar').style.backgroundPosition = `${cRunner.posX}% ${cRunner.posY}%`;
+            
+            // 修正點：確保戰隊車輪戰在輪替換人時，中心頭像亦能正確切換並渲染
+            const p1Ava = document.getElementById('p1-avatar');
+            const p2Ava = document.getElementById('p2-avatar');
+            p1Ava.style.backgroundImage = 'var(--bg-grid-1)';
+            p1Ava.style.backgroundPosition = `${uRunner.posX}% ${uRunner.posY}%`;
+            p2Ava.style.backgroundImage = 'var(--bg-grid-1)';
+            p2Ava.style.backgroundPosition = `${cRunner.posX}% ${cRunner.posY}%`;
 
             document.getElementById('race-announcement').innerText = `第 ${relayMatchIndex+1} 回合對決準備發射！`;
 
             setTimeout(() => {
                 let timer = 0;
+                const p1Node = document.getElementById('p1-node');
+                const p2Node = document.getElementById('p2-node');
+                p1Node.style.left = "40px"; p1Node.style.top = "60px";
+                p2Node.style.left = "210px"; p2Node.style.top = "180px";
+
                 raceInterval = setInterval(() => {
-                    timer += 50;
-                    if(timer >= 1500) {
+                    timer += 30;
+                    
+                    let p1X = 120 + Math.sin(timer / 80) * 50 + (Math.random() * 12 - 6);
+                    let p1Y = 120 + Math.cos(timer / 80) * 50 + (Math.random() * 12 - 6);
+                    let p2X = 120 + Math.sin((timer / 80) + Math.PI) * 45 + (Math.random() * 12 - 6);
+                    let p2Y = 120 + Math.cos((timer / 80) + Math.PI) * 45 + (Math.random() * 12 - 6);
+
+                    p1Node.style.left = p1X + 'px'; p1Node.style.top = p1Y + 'px';
+                    p2Node.style.left = p2X + 'px'; p2Node.style.top = p2Y + 'px';
+
+                    if (timer >= 1800) {
                         clearInterval(raceInterval);
-                        let userWin = Math.random() > 0.48; // 玩家微幅優勢
+                        let userWin = Math.random() > 0.48; 
                         if(userWin) { relayScores.user++; } else { relayScores.cpu++; }
                         document.getElementById('score-text').innerText = `${relayScores.user} : ${relayScores.cpu}`;
                         document.getElementById('race-announcement').innerText = userWin ? `🎉 ${uRunner.name} 拿下這一局！` : `❌ ${cRunner.name} 拿下這一局！`;
@@ -594,7 +644,7 @@
                             }
                         }, 1500);
                     }
-                }, 50);
+                }, 30);
             }, 1000);
         }
 
@@ -614,6 +664,18 @@
 
             const nextBtn = document.getElementById('next-stage-btn');
             nextBtn.innerText = "查看最終頒獎台"; nextBtn.classList.remove('hidden');
+        }
+
+        function advanceStage() {
+            if (gameMode === 'single') {
+                if (currentStage === 'Semi1') {
+                    currentStage = 'Semi2'; setupSingleBattle();
+                } else if (currentStage === 'Semi2') {
+                    currentStage = 'Final'; setupSingleBattle();
+                }
+            } else {
+                showFinalPodiumDisplay();
+            }
         }
 
         /* ==================== 🏆 結算顯示面板 ==================== */
